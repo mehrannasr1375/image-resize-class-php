@@ -1,14 +1,12 @@
 <?php
 
-require_once "UploadClass.php";
-if (isset($_POST['submit-file'])){
-    $file = new Upload('img-file');
-    if($file -> checkImg(1024000)){
-        $file -> saveImg(300, 300);
-        echo "successfully uploaded!";
-    } else
-        echo $file->getErrorMsg();
-} 
+
+include "./newImgClass.php";
+
+$image = new Image('1.jpg');
+$res = $image->check();
+$res = $image->resize(200,200,'crop');
+$res = $image->saveImage('./aa.jpg',100);
 ?>
 <!DOCTYPE html>
 <html lang="en">
