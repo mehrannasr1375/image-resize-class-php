@@ -1,8 +1,8 @@
-# upload-and-resize-class-php
-a simple class for upload images with check size, extension and save them in custom size 
+# resize-class-php
 
--first see the example on: 'UploadTest.php'
+a simple class for uploaded images on serve, with check size, extension and save them in custom size & custom crop style
 
--include the class file called: 'UploadClass.php' and use it
+- first see the example on: 'imageTest.php'
 
+- include the class file called: 'image.class.php' and use it
 
