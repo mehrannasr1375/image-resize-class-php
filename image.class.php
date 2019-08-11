@@ -4,14 +4,14 @@ class Image {
 
     /* This class takes only 1 argument:
      *              file path with file name in a string
-     *              that it can be the temporary path of uploaded image
+     *              that it can be the temporary path of uploaded image (like $_FILES['fieldname']['tmp_name])
      */
     
     private $image; // our opened image, known as a resource in an attribute
     private $width;
     private $height;
     public  $error = '';
-    private $fileSize; //in Bytes
+    private $fileSize; //in KiloBytes
     private $extension;
 
     private $imageResized; //result as a resource is accessible on this attribute (image on a variable)
