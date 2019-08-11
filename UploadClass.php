@@ -1,95 +1,111 @@
 <?php
-class  Upload
-{ 
-    private $fileName;
-    private $fileType;
-    private $fileTmpName;
-    private $fileError;
-    private $fileSize;
 
-    private $fileExt;
-    private $fileNameNew;
-    private $destination;
-    private $errorMsg="";
-   
-    public function __construct($uploadFieldName) #input is an array(input tag name attribute)
-    {
-        $this -> fileName = $_FILES[$uploadFieldName]['name'];
-        $this -> fileType = $_FILES[$uploadFieldName]['type'];
-        $this -> fileTmpName = $_FILES[$uploadFieldName]['tmp_name'];
-        $this -> fileError = $_FILES[$uploadFieldName]['error'];
-        $this -> fileSize = $_FILES[$uploadFieldName]['size'];
-    }
+class Image {
 
-    public function checkImg($maxSize=1024000)
-    {
-        #checks: size & extension & upload errors & empty upload
-        if ($this -> fileSize == 0){
-            $this -> errorMsg = "there is no file for upload";
-            return false;
-        }
-        $fileExtTmp = explode(".", $this -> fileName);
-        $this -> fileExt = strtolower(end($fileExtTmp));
-        if (in_array($this -> fileExt, ['jpg', 'jpeg', 'png'])){
-            if ($this -> fileError === 0){
-                if ($this -> fileSize < $maxSize){
-                    $this -> errorMsg = null;
-                    return true;
-                } else {
-                    $this -> errorMsg = "your file is too big for that!";
-                    return false;
-                }
-            } else {
-                $this -> errorMsg = "there was an error on uploading your file! (error code = $this->fileError)";
-                return false; 
-            }
-        } else {
-            $this -> errorMsg = "you can not upload files of this type!";
-            return false;
-        }
-    }
+    /* This class takes only 1 argument:
+     *              file path with file name in a string
+     *              that it can be the temporary path of uploaded image
+     */
+    
+    private $image; // our opened image, known as a resource in an attribute
+    private $width;
+    private $height;
+    public  $error = '';
+    private $fileSize; //in Bytes
+    private $extension;
 
-    public function saveImg($newWidth, $newHeight, $to='img/200x200/', $aspectRatioEnabled=false, $quality=100)
+    private $imageResized; //result as a resource is accessible on this attribute (image on a variable)
+
+    
+    
+    function __construct($fileName)
     {
-        # create new img - sets(fileNameNew & destination)
-        switch ($this -> fileType){ #get image from base upload dir to memory
-            case "image/png":
-                $img = imagecreatefrompng($this -> fileTmpName);
+
+
+        // get the extension of image
+        $this->extension = strtolower(end(explode(".", $fileName)));
+
+
+        // get image from specified path & store it into image attribute of class
+        switch ( $this->extension ) {
+            case 'jpeg':
+            case 'jpg':
+                $this->image = imagecreatefromjpeg($fileName);
                 break;
-            case "image/gif":
-                $img = imagecreatefromgif($this -> fileTmpName);
+            case 'png':
+                $this->image = imagecreatefrompng($fileName);
+                break;
+            case 'gif':
+                $this->image = imagecreatefromgif($fileName);
                 break;
             default:
-                $img = imagecreatefromjpeg($this -> fileTmpName);
+                $this->image = null;
+                $this->error = 'Unsupported Image Type';
                 break;
         }
-        list($oldWidth, $oldHeight) = getimagesize($this -> fileTmpName); #get width & height of main image
-        $tmpImg = imagecreatetruecolor($newWidth, $newHeight); #create the free plane for resized image
-        $white = imagecolorallocate($tmpImg, 255, 255, 255);
-        imagecopyresampled($tmpImg, $img, 0, 0, 0, 0, $newWidth, $newHeight, $oldWidth, $oldHeight);
-        $fileNameNew = time().".".rand().".".($this -> fileExt);
-        if (imagejpeg($tmpImg, $to.$fileNameNew, $quality)){
-            $this -> destination = $to.($this -> fileNameNew);
-            imagedestroy($tmpImg);
-            imagedestroy($img);
-            return true;
-        } else
-            return ("Image not Resized!"); 
+
+
+        /* get with & height & fileSize & store them into class attributes,
+         if there is no error on reading that */
+        if ( empty($this->error) ) {
+            /* get size with 'GD' (from a variable in memory):
+               $this->width  = imagesx($this->image);
+               $this->height = imagesy($this->image); */
+
+            // get image size from path && set error if size<10kb
+            $this->fileSize = @filesize($fileName)/1024; //KBytes
+            if ( $this->fileSize<10 )
+                $this->error = "Very Small File";
+
+            // get width and height from path && set error if width<128 || height<128
+            list($this->width, $this->height) = @getimagesize($fileName); 
+            if ( $this->width < 128 || $this->height < 128 )
+                $this->error = "Very Low Resolution";
+
+        }
+
     }
 
-    public function getImgPath()
-    {
-        return $this -> destination;
+
+    public function check($maxSize=1024) // 1 KBytes - returns boolean
+    { 
+        // check upload errors & empty file & fileSize
+        if ( empty($this->error) ) {
+            if ( $this->fileSize < $maxSize && $this->fileSize != 0 ) {
+                $this->error = null;
+                return true;
+            } else if ( $this->fileSize == 0 ) {
+                $this->error = "empty file";
+                return false;
+            } else {
+                $this->error = "large file";
+                return false;
+            }
+        } else 
+            return false;  
     }
 
-    public function getImgName()
-    {
-        return $this -> fileNameNew;
-    }
 
-    public function getErrorMsg()
-    {
-        return $this -> errorMsg;
-    }
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }
