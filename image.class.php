@@ -23,7 +23,7 @@ class Image {
 
 
         // get the extension of image
-        $this->extension = strtolower(end(explode(".", $fileName)));
+        $this->extension = @strtolower(end(explode(".", $fileName)));
 
 
         // get image from specified path & store it into image attribute of class
@@ -70,18 +70,22 @@ class Image {
     public function check($maxSize=1024) // 1 KBytes - returns boolean
     { 
         // check upload errors & empty file & fileSize
-        if ( empty($this->error) ) {
+        if ( empty($this->error) ) 
+        {
             if ( $this->fileSize < $maxSize && $this->fileSize != 0 ) {
                 $this->error = null;
                 return true;
-            } else if ( $this->fileSize == 0 ) {
-                $this->error = "empty file";
+            }
+            else if ( $this->fileSize == 0 ) {
+                $this->error = "Empty File";
                 return false;
-            } else {
-                $this->error = "large file";
+            } 
+            else {
+                $this->error = "Large File";
                 return false;
             }
-        } else 
+        } 
+        else 
             return false;  
     }
 
@@ -132,18 +136,24 @@ class Image {
         }
         return array('optimalWidth' => $optimalWidth, 'optimalHeight' => $optimalHeight);
     }
+
+
     private function getSizeByFixedHeight($newHeight)
     {
         $ratio = $this->width / $this->height;
         $newWidth = $newHeight * $ratio;
         return $newWidth;
     }
+
+
     private function getSizeByFixedWidth($newWidth)
     {
         $ratio = $this->height / $this->width;
         $newHeight = $newWidth * $ratio;
         return $newHeight;
     }
+
+
     private function getSizeByAuto($newWidth, $newHeight)
     {
         if ($this->height < $this->width)// Image to be resized is wider (landscape)
@@ -173,6 +183,8 @@ class Image {
 
         return array('optimalWidth' => $optimalWidth, 'optimalHeight' => $optimalHeight);
     }
+
+    
     private function getOptimalCrop($newWidth, $newHeight)
     {
 
