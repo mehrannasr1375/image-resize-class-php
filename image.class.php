@@ -1,28 +1,35 @@
 <?php
-
+// Each instance of this class, takes only 1 argument: file path with file name as a string
+// it also can be the temporary path of uploaded image (like $_FILES['fieldname']['tmp_name])
 class Image {
 
-    /* This class takes only 1 argument:
-     *              file path with file name in a string
-     *              that it can be the temporary path of uploaded image (like $_FILES['fieldname']['tmp_name])
-     */
     
-    private $image; // our opened image, known as a resource in an attribute
-    private $width;
-    private $height;
-    public  $error = '';
-    private $fileSize; //in KiloBytes
-    private $extension;
 
-    private $imageResized; //result as a resource is accessible on this attribute (image on a variable)
+    public $image;          // our opened image, known as a resource in an attribute
+    public $width;          //
+    public $height;         //
+    public $error = '';     //
+    public $fileSize;       // in KiloBytes
+    public $extension;      // without '.'
+    public $imageResized;   // result as a resource (image on a variable)
 
     
     
-    function __construct($fileName)
+    function __construct( $fileName ) // save size, width, height, extension with call instance
     {
 
 
-        // get the extension of image
+        /* 
+            :مزایا
+            تنها با ایجاد یک شئ از کلاس میتوانیم با ذخیره ی آن شئ در یک متغیر، به خاصیتهایی چون 
+            width , height, size , extension
+            دسترسی داشته باشیم
+            یا حتی به خود تصویر که در متغیر قرار گرفته، بدون ذخیره ی آن در دیسک
+          
+         */
+
+
+        // get extension 
         $this->extension = @strtolower(end(explode(".", $fileName)));
 
 
@@ -45,29 +52,29 @@ class Image {
         }
 
 
-        /* get with & height & fileSize & store them into class attributes,
-         if there is no error on reading that */
+        // get with , height , fileSize , store them into class attributes, if there is no error
         if ( empty($this->error) ) {
-            /* get size with 'GD' (from a variable in memory):
-               $this->width  = imagesx($this->image);
-               $this->height = imagesy($this->image); */
+            
 
             // get image size from path && set error if size<10kb
-            $this->fileSize = @filesize($fileName)/1024; //KBytes
-            if ( $this->fileSize<10 )
+            $this->fileSize = @round(filesize($fileName) / 1024); //KBytes
+            if ( $this->fileSize < 10 )
                 $this->error = "Very Small File";
+
 
             // get width and height from path && set error if width<128 || height<128
             list($this->width, $this->height) = @getimagesize($fileName); 
             if ( $this->width < 128 || $this->height < 128 )
                 $this->error = "Very Low Resolution";
 
+                
         }
 
     }
+    
 
 
-    public function check($maxSize=1024) // 1 KBytes - returns boolean
+    public function check($maxSize=1024) // size in KB - returns boolean
     { 
         // check upload errors & empty file & fileSize
         if ( empty($this->error) ) 
@@ -90,6 +97,7 @@ class Image {
     }
 
 
+
     public function resize($newWidth, $newHeight, $option="auto")
     { 
         // Get optimal width and height - based on $option
@@ -105,6 +113,7 @@ class Image {
         if ($option == 'crop') 
             $this->crop($optimalWidth, $optimalHeight, $newWidth, $newHeight);
     }
+
 
 
     private function getOptimalDimensions($newWidth, $newHeight, $option) // choose optional size by selected option
@@ -138,6 +147,7 @@ class Image {
     }
 
 
+
     private function getSizeByFixedHeight($newHeight)
     {
         $ratio = $this->width / $this->height;
@@ -146,12 +156,14 @@ class Image {
     }
 
 
+
     private function getSizeByFixedWidth($newWidth)
     {
         $ratio = $this->height / $this->width;
         $newHeight = $newWidth * $ratio;
         return $newHeight;
     }
+
 
 
     private function getSizeByAuto($newWidth, $newHeight)
@@ -185,6 +197,7 @@ class Image {
     }
 
     
+
     private function getOptimalCrop($newWidth, $newHeight)
     {
 
@@ -202,6 +215,7 @@ class Image {
 
         return array('optimalWidth' => $optimalWidth, 'optimalHeight' => $optimalHeight);
     }
+
 
 
     private function crop($optimalWidth, $optimalHeight, $newWidth, $newHeight)
@@ -224,31 +238,31 @@ class Image {
     }
 
 
-    public function saveImage($savePath, $imageQuality="100")
+
+    public function saveImage($savePath, $imageQuality="100") // Output image to browser or file
     {
         $extension = strtolower(strrchr($savePath, '.'));
         switch( $extension )
         {
             case '.jpg':
             case '.jpeg':
-                imagejpeg($this->imageResized, $savePath, $imageQuality);
+                imagejpeg($this->imageResized, $savePath, $imageQuality); // Output image to browser or file
                 break;
             case '.gif':
-                imagegif($this->imageResized, $savePath);
+                imagegif($this->imageResized, $savePath); // Output image to browser or file
                 break;
             case '.png':
-                // Scale quality from 0-100 to 0-9
-                $scaleQuality = round(($imageQuality/100) * 9);
-                // Invert quality setting as 0 is best, not 9
-                $invertScaleQuality = 9 - $scaleQuality;
-                imagepng($this->imageResized, $savePath, $invertScaleQuality);
+                $scaleQuality = round(($imageQuality/100) * 9); // Scale quality from 0-100 to 0-9
+                $invertScaleQuality = 9 - $scaleQuality; // Invert quality setting as 0 is best, not 9
+                imagepng($this->imageResized, $savePath, $invertScaleQuality); // Output image to browser or file
                 break;
             default:// No extension => No save
-                    $this->error = 'saveError';
+                $this->error = 'Save Error';
                 break;
         }
         imagedestroy($this->imageResized);
     }
+
 
 
 }
