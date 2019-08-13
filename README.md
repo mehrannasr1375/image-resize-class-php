@@ -1,8 +1,17 @@
 # resize-class-php
 
-a simple class for uploaded images on serve, with check size, extension and save them in custom size & custom crop style
+PHP >= 5.6
 
-- first see the example on: 'imageTest.php'
+a simple class for images on server
 
-- include the class file called: 'image.class.php' and use it
+you can do these things with this class:
+-> check size
+-> check extension
+-> save images in custom size && image types
+-> select croping method (exact, landscape, prtrait, auto, crop)
+
+first see the example on: 'imageTest.php'
+
+- Usage:
+   just include the class file called: 'image.class.php' and use it ...
 
