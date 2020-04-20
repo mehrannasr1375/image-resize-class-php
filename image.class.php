@@ -12,6 +12,8 @@ class Image
     public $extension;
     public $imageResized;
     public $imageNewName;
+    private $allowed_extensions = ['jpeg', 'jpg', 'png', 'gif'];
+    private $not_allowed_extensions = ['py', 'exe', 'sh', 'bat', 'msi', 'bin', 'js'];
 
 
     /*
@@ -20,7 +22,7 @@ class Image
      */
 
 
-    function __construct( $fileName )
+    function __construct($fileName)
     {
         /*
          *  with creating an object of an image,
@@ -32,21 +34,23 @@ class Image
         $this->extension = @strtolower(end(explode(".", $fileName['name'])));
 
         // get image from specified path & store it into 'image' property
-        switch ( $this->extension ) {
-            case 'jpeg':
-            case 'jpg':
-                $this->image = imagecreatefromjpeg($fileName['tmp_name']);
-                break;
-            case 'png':
-                $this->image = imagecreatefrompng($fileName['tmp_name']);
-                break;
-            case 'gif':
-                $this->image = imagecreatefromgif($fileName['tmp_name']);
-                break;
-            default:
-                $this->image = null;
-                $this->error = 'فرمت تصویر پشتیبانی نمی شود';
-                break;
+        if (in_array($this->extension, $this->allowed_extensions)) {
+            switch ( $this->extension ) {
+                case 'jpeg':
+                case 'jpg':
+                    $this->image = imagecreatefromjpeg($fileName['tmp_name']);
+                    break;
+                case 'png':
+                    $this->image = imagecreatefrompng($fileName['tmp_name']);
+                    break;
+                case 'gif':
+                    $this->image = imagecreatefromgif($fileName['tmp_name']);
+                    break;
+                default:
+                    $this->image = null;
+                    $this->error = 'upacceptable file type';
+                    break;
+            }
         }
 
         // get with , height , fileSize , store them into class attributes, if there is no error
@@ -55,13 +59,24 @@ class Image
             // get image size from path && set error if size < 10kb
             $this->fileSize = @round(filesize($fileName['tmp_name']) / 1024); // kb
             if ( $this->fileSize < 10 )
-                $this->error = "حجم تصویر بسیار پایین است";
+                $this->error = "very small image";
 
             // get width and height from path && set error if width < 128 || height < 128
             list($this->width, $this->height) = @getimagesize($fileName['tmp_name']);
             if ( $this->width < 128 || $this->height < 128 )
-                $this->error = "رزولوشن تصویر بسیار پایین است";
+                $this->error = "very low resolution";
 
+        }
+    }
+
+    public function __set($key, $value)
+    {
+        if ($key == 'allowed_extensions' || $key == 'not_allowed_extensions') {
+            if (is_array($value)) {
+                $this->$key = $value;
+            } else {
+                $this->error = 'unacceptable `'  . $key . '` value';
+            }
         }
     }
 
