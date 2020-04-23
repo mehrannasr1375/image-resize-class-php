@@ -1,33 +1,18 @@
 <?php
 require_once "./image.class.php";
 
+if (isset($_POST['submit'])) {
+    $image = new Image('image'); // input name=image
 
-// made a new instance od Image class
-$image = new Image('1.jpg');
-
-
-// check extension, size, resolution, error
-$check_res  = $image->check(); //true || false
-$resize_res = $image->resize(200,200,'crop'); //null
-$save_res   = $image->saveImage('./result.jpg',100); //null
-
-
-var_dump($image);
-var_dump($check_res);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    if ($image->check(2048)) {
+        $img->resize(1024, 768, 'crop');
+        $image->saveTo('./', 100);
+    }  
+}
 ?>
+
+<form method="POST" enctype="multipart/form-data">
+    <input type="file" name="image">
+    <button type="submit" name="submit">send</button>
+</form>
+
