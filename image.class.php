@@ -1,68 +1,71 @@
 <?php
-// Each instance of this class, takes only 1 argument: file path with file name as a string
-// it also can be the temporary path of uploaded image (like $_FILES['fieldname']['tmp_name])
+/* Each instance of this class, takes only 1 argument: the name of input control
+ * after create an instance of class, you should call `check(size)` method for checking upload errors
+ **/
 
 class Image
 {
-    public $image; // our opened image, known as a resource in an attribute
+
+    private $image; // our opened image, known as a resource in an attribute
     public $width;
     public $height;
     public $error = '';
     public $fileSize; // in KB
-    public $extension;
     public $imageResized;
     public $imageNewName;
+    private $extension;
     private $allowed_extensions = ['jpeg', 'jpg', 'png', 'gif'];
     private $not_allowed_extensions = ['py', 'exe', 'sh', 'bat', 'msi', 'bin', 'js'];
 
 
-    /*
-     *    input argument is the field name of posted image, like this:
-     *        $img = new Imagabe($_FILES['field_name']);
-     */
 
+    /* Magic functions */
 
-    function __construct($fileName)
+    public function __construct($fileName)
     {
-        /*
-         *  with creating an object of an image,
-         *      we can access to the attributes like: 'width', 'height', 'size', 'extension'
-         *      and the image itself which is stored on 'image' attribute
-         */
+        /* with creating an object of an image,
+         * we can access to the attributes like: 'width', 'height', 'size', 'extension'
+         * and the image itself which is stored in 'image' attribute
+         **/
 
         // get extension
-        $this->extension = @strtolower(end(explode(".", $fileName['name'])));
+        $this->extension = @strtolower(end(explode(".", $_FILES[$fileName]['name'])));
 
-        // get image from specified path & store it into 'image' property
-        if (in_array($this->extension, $this->allowed_extensions)) {
+        if ($this->extension == '')
+            $this->error = 'image not selected';
+
+        // get image from specified path & store it into `image` property
+        else if (in_array($this->extension, $this->allowed_extensions)) {
             switch ( $this->extension ) {
                 case 'jpeg':
                 case 'jpg':
-                    $this->image = imagecreatefromjpeg($fileName['tmp_name']);
+                    $this->image = imagecreatefromjpeg($_FILES[$fileName]['tmp_name']);
                     break;
                 case 'png':
-                    $this->image = imagecreatefrompng($fileName['tmp_name']);
+                    $this->image = imagecreatefrompng($_FILES[$fileName]['tmp_name']);
                     break;
                 case 'gif':
-                    $this->image = imagecreatefromgif($fileName['tmp_name']);
+                    $this->image = imagecreatefromgif($_FILES[$fileName]['tmp_name']);
                     break;
                 default:
                     $this->image = null;
                     $this->error = 'upacceptable file type';
                     break;
             }
+        } else {
+            $this->error = 'upacceptable mime type';
         }
 
         // get with , height , fileSize , store them into class attributes, if there is no error
         if ( empty($this->error) ) {
 
             // get image size from path && set error if size < 10kb
-            $this->fileSize = @round(filesize($fileName['tmp_name']) / 1024); // kb
+            $this->fileSize = @round(filesize($_FILES[$fileName]['tmp_name']) / 1024); // kb
             if ( $this->fileSize < 10 )
                 $this->error = "very small image";
 
             // get width and height from path && set error if width < 128 || height < 128
-            list($this->width, $this->height) = @getimagesize($fileName['tmp_name']);
+            list($this->width, $this->height) = @getimagesize($_FILES[$fileName]['tmp_name']);
             if ( $this->width < 128 || $this->height < 128 )
                 $this->error = "very low resolution";
 
@@ -71,6 +74,10 @@ class Image
 
     public function __set($key, $value)
     {
+        /* for set `allowed_extensions` attribute
+         * returns null
+         **/
+
         if ($key == 'allowed_extensions' || $key == 'not_allowed_extensions') {
             if (is_array($value)) {
                 $this->$key = $value;
@@ -80,13 +87,17 @@ class Image
         }
     }
 
+
+
+    /* Available functions */
+
     public function check($maxSize=1024)
     {
-        // check upload errors & empty file & fileSize (in KB)
-        // returns boolean
+        /* check upload errors & empty file & fileSize (in KB)
+         * returns boolean
+         **/
 
-        if ( empty($this->error) )
-        {
+        if ( empty($this->error) ) {
             if ( $this->fileSize < $maxSize && $this->fileSize != 0 ) {
                 $this->error = null;
                 return true;
@@ -104,8 +115,9 @@ class Image
 
     public function resize($newWidth, $newHeight, $option="auto")
     {
-        // resize image and save it into 'imageResized' attribute
-        // returns null
+        /* resize image and save it into `imageResized` attribute
+         * returns null
+         **/
 
         // Get optimal width and height - based on $option
         $optimalSizes  = $this->getOptimalDimensions($newWidth, $newHeight, strtolower($option));
@@ -121,10 +133,47 @@ class Image
             $this->crop($optimalWidth, $optimalHeight, $newWidth, $newHeight);
     }
 
+    public function saveTo($path, $quality="100")
+    {
+        // returns null
+        // save image to specified path with random name
+
+        if (!is_dir($path) || !is_writable($path)) {
+            $this->error = 'invalid path';
+        }
+
+        $this->imageNewName = "img_" . rand(10000,99999).time() . "." . $this->extension;
+
+        switch ( $this->extension ) {
+            case 'jpg':
+            case 'jpeg':
+                imagejpeg($this->imageResized, $path . $this->imageNewName, $quality);
+                break;
+            case 'gif':
+                imagegif($this->imageResized, $path . $this->imageNewName);
+                break;
+            case 'png':
+                $scaleQuality = round(($quality/100) * 9);
+                $invertScaleQuality = 9 - $scaleQuality;
+                imagepng($this->imageResized, $path . $this->imageNewName, $invertScaleQuality); // 0 is best - 9 is poor
+                break;
+            default:
+                $this->error = 'خطا در ذخیره سازی تصویر';
+                break;
+        }
+
+        imagedestroy($this->imageResized);
+    }
+
+
+
+    /* Internal functions */
+
     private function getOptimalDimensions($newWidth, $newHeight, $option)
     {
-        // choose optional size by selected option
-        // returns array
+        /* choose optional size by selected option
+         * returns array
+         **/
 
         switch ($option)
         {
@@ -230,7 +279,9 @@ class Image
 
     private function crop($optimalWidth, $optimalHeight, $newWidth, $newHeight)
     {
-        // returns null
+        /* used for `resize()` function
+         * returns null
+         **/
 
         try {
             // Find center - this will be used for the strart point for crop
@@ -247,38 +298,6 @@ class Image
         catch (Exception $e) {
             $this->error = 'cropError : '.$e->getMessage();
         }
-    }
-
-    public function saveTo($path, $quality="100")
-    {
-        // returns null
-        // save image to specified path with random name
-
-        if (!is_dir($path) || !is_writable($path)) {
-            $this->error = 'invalid path';
-        }
-
-        $this->imageNewName = "img_" . rand(10000,99999).time() . "." . $this->extension;
-
-        switch ( $this->extension ) {
-            case 'jpg':
-            case 'jpeg':
-                imagejpeg($this->imageResized, $path . $this->imageNewName, $quality);
-                break;
-            case 'gif':
-                imagegif($this->imageResized, $path . $this->imageNewName);
-                break;
-            case 'png':
-                $scaleQuality = round(($quality/100) * 9);
-                $invertScaleQuality = 9 - $scaleQuality;
-                imagepng($this->imageResized, $path . $this->imageNewName, $invertScaleQuality); // 0 is best - 9 is poor
-                break;
-            default:
-                $this->error = 'خطا در ذخیره سازی تصویر';
-                break;
-        }
-
-        imagedestroy($this->imageResized);
     }
 
 }
